@@ -6,11 +6,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const usersRoutes = require('./routes/users');
+const listingRoutes = require('./routes/listings');
 
 // Initialize Express app
 const app = express();
@@ -24,9 +26,9 @@ app.use(helmet());
 // Compress all responses
 app.use(compression());
 
-// Enable CORS (Cross-Origin Resource Sharing)
+// Enable CORS (Cross-Origin Resource Sharing) for the specific frontend domain
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3001', 
+  origin: 'https://www.rentscout.co.za', 
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -47,16 +49,19 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/listings', listingRoutes);
 
-// Simple health check endpoint
+
+// Health check for the API
 app.get('/', (req, res) => {
   res.send(`RentScout API is running... Healthy at ${new Date().toISOString()}`);
 });
 
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  res.status(500).json({ msg: 'Something broke!' });
 });
 
 

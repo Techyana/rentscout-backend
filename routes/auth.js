@@ -1,13 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = 'jsonwebtoken';
+const jwt =require('jsonwebtoken');
 const db = require('../config/db');
 const mailer = require('../config/mailer');
 const { registerValidation, loginValidation } = require('../middleware/validation');
 const { validationResult } = require('express-validator');
 
 const router = express.Router();
-const jsonwebtoken = require('jsonwebtoken');
 
 const createDefaultProfile = (id, email) => ({
   id,
@@ -15,7 +14,7 @@ const createDefaultProfile = (id, email) => ({
   name: "New User",
   age: 25,
   occupation: "Digital Nomad",
-  status: 'seeking_mate',
+  status: 'seeking_place',
   bio: "Just moved here, looking for a great place to live and cool people to share it with. Let's connect!",
   likes: ["coffee", "hiking", "live-music"],
   dislikes: ["messiness"],
@@ -29,8 +28,8 @@ const createDefaultProfile = (id, email) => ({
 });
 
 
-const signToken = (id) => {
-  return jsonwebtoken.sign({ id }, process.env.JWT_SECRET, {
+const signToken = (user) => {
+  return jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
@@ -44,7 +43,7 @@ const signToken = (id) => {
 router.post('/register', registerValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ msg: errors.array()[0].msg });
     }
 
     const { email, password } = req.body;
@@ -63,16 +62,15 @@ router.post('/register', registerValidation, async (req, res) => {
         const query = `
             INSERT INTO users (email, password_hash, name, age, occupation, status, bio, likes, dislikes, rating, past_stays, media_posts, is_premium, followers, following, like_count)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-            RETURNING id, name, age, occupation, status, bio, likes, dislikes, rating, past_stays, media_posts, is_premium, followers, following, like_count;
+            RETURNING id, name, age, occupation, status, bio, likes, dislikes, rating, past_stays AS "pastStays", media_posts AS "mediaPosts", is_premium AS "isPremium", followers, following, like_count AS "likeCount";
         `;
         const values = [email, password_hash, defaultProfile.name, defaultProfile.age, defaultProfile.occupation, defaultProfile.status, defaultProfile.bio, defaultProfile.likes, defaultProfile.dislikes, defaultProfile.rating, JSON.stringify(defaultProfile.pastStays), JSON.stringify(defaultProfile.mediaPosts), defaultProfile.isPremium, defaultProfile.followers, defaultProfile.following, defaultProfile.likeCount];
 
         const { rows } = await db.query(query, values);
         const newUser = rows[0];
 
-        const token = signToken(newUser.id);
+        const token = signToken(newUser);
         
-        // Send admin notification email (fire and forget)
         const adminEmail = process.env.ADMIN_EMAIL;
         if (adminEmail) {
             mailer.sendMail({
@@ -88,7 +86,7 @@ router.post('/register', registerValidation, async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error' });
     }
 });
 
@@ -100,7 +98,7 @@ router.post('/register', registerValidation, async (req, res) => {
 router.post('/login', loginValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ msg: errors.array()[0].msg });
     }
 
     const { email, password } = req.body;
@@ -111,23 +109,39 @@ router.post('/login', loginValidation, async (req, res) => {
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
-        const user = result.rows[0];
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const userRow = result.rows[0];
+        const isMatch = await bcrypt.compare(password, userRow.password_hash);
 
         if (!isMatch) {
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
         
-        const token = signToken(user.id);
+        const token = signToken(userRow);
         
-        // Remove password hash from the user object before sending
-        delete user.password_hash;
+        const user = {
+          id: userRow.id,
+          email: userRow.email,
+          name: userRow.name,
+          age: userRow.age,
+          occupation: userRow.occupation,
+          status: userRow.status,
+          bio: userRow.bio,
+          likes: userRow.likes,
+          dislikes: userRow.dislikes,
+          rating: userRow.rating,
+          pastStays: userRow.past_stays,
+          mediaPosts: userRow.media_posts,
+          isPremium: userRow.is_premium,
+          followers: userRow.followers,
+          following: userRow.following,
+          likeCount: userRow.like_count
+        };
 
         res.json({ token, user });
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error' });
     }
 });
 

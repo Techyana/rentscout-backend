@@ -7,6 +7,27 @@ const authMiddleware = require('../middleware/auth');
 router.use(authMiddleware);
 
 /**
+ * @route   GET /api/users
+ * @desc    Get all user profiles except the current user
+ * @access  Private
+ */
+router.get('/', async (req, res) => {
+    try {
+        const query = `
+            SELECT id, name, age, occupation, status, bio, likes, dislikes, rating, past_stays AS "pastStays", media_posts AS "mediaPosts", is_premium AS "isPremium", followers, following, like_count AS "likeCount"
+            FROM users 
+            WHERE id != $1;
+        `;
+        const { rows } = await db.query(query, [req.user.id]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+
+/**
  * @route   POST /api/users/connect
  * @desc    Send a connection request to another user
  * @access  Private
@@ -67,7 +88,7 @@ router.post('/connect', async (req, res) => {
     if(err.code === '23503') { // foreign key violation
         return res.status(404).json({ msg: 'One of the users does not exist.' });
     }
-    res.status(500).send('Server Error');
+    res.status(500).json({ msg: 'Server Error' });
   }
 });
 

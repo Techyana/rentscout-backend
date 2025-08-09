@@ -46,11 +46,32 @@ router.put('/', profileUpdateValidation, async (req, res) => {
         return res.status(404).json({ msg: 'User not found' });
     }
     
-    res.json({ success: true, user: rows[0] });
+    // Convert field names to camelCase for the frontend
+    const user = {
+      id: rows[0].id,
+      email: rows[0].email,
+      name: rows[0].name,
+      age: rows[0].age,
+      occupation: rows[0].occupation,
+      status: rows[0].status,
+      bio: rows[0].bio,
+      likes: rows[0].likes,
+      dislikes: rows[0].dislikes,
+      rating: rows[0].rating,
+      pastStays: rows[0].past_stays,
+      mediaPosts: rows[0].media_posts,
+      isPremium: rows[0].is_premium,
+      followers: rows[0].followers,
+      following: rows[0].following,
+      likeCount: rows[0].like_count
+    };
+
+
+    res.json({ success: true, user });
 
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server Error');
+    res.status(500).json({ msg: 'Server Error' });
   }
 });
 
