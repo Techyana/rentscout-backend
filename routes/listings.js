@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const authMiddleware = require('../middleware/auth');
-const { listingValidation } = require('../middleware/validation');
+const db = require('../src/config/db');
+const authMiddleware = require('../src/middleware/auth');
+const { listingValidation } = require('../src/middleware/validation');
 const { validationResult } = require('express-validator');
 
 /**
@@ -121,7 +121,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
             return res.status(403).json({ msg: 'User not authorized to delete this listing' });
         }
 
-        await db.query('DELETE FROM listings WHERE id = $1', [listingId]);
+        await`` db.query('DELETE FROM listings WHERE id = $1', [listingId]);
         res.json({ success: true, msg: 'Listing deleted successfully' });
     } catch (err) {
         console.error(err.message);

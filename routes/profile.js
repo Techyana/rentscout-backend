@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const authMiddleware = require('../middleware/auth');
-const { profileUpdateValidation } = require('../middleware/validation');
+const db = require('../src/config/db');
+const authMiddleware = require('../src/middleware/auth');
+const { profileUpdateValidation } = require('../src/middleware/validation');
 const { validationResult } = require('express-validator');
 
 // Protect all routes in this file

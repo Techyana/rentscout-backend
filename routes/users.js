@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const mailer = require('../config/mailer');
-const authMiddleware = require('../middleware/auth');
+const db = require('../src/config/db');
+const mailer = require('../src/config/mailer');
+const authMiddleware = require('../src/middleware/auth');
 
 router.use(authMiddleware);
 

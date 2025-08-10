@@ -1,3 +1,4 @@
+
 // Load environment variables from .env file
 require('dotenv').config();
 
@@ -9,10 +10,10 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const profileRoutes = require('./routes/profile');
-const usersRoutes = require('./routes/users');
-const listingRoutes = require('./routes/listings');
+const authRoutes = require('../routes/auth');
+const profileRoutes = require('../routes/profile');
+const usersRoutes = require('../routes/users');
+const listingRoutes = require('../routes/listings');
 
 // Initialize Express app
 const app = express();
@@ -26,9 +27,9 @@ app.use(helmet());
 // Compress all responses
 app.use(compression());
 
-// Enable CORS (Cross-Origin Resource Sharing) for the specific frontend domain
+// Enable CORS (Cross-Origin Resource Sharing) using the .env variable
 const corsOptions = {
-  origin: 'https://www.rentscout.co.za', 
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Fallback for local dev
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -57,7 +58,7 @@ app.get('/', (req, res) => {
   res.send(`RentScout API is running... Healthy at ${new Date().toISOString()}`);
 });
 
-
+ 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -68,5 +69,5 @@ app.use((err, req, res, next) => {
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`Accepting requests from: ${corsOptions.origin}`);
+  console.log(`Accepting CORS requests from: ${corsOptions.origin}`);
 });
